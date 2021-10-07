@@ -106,4 +106,22 @@ public final class DatabaseManager {
         }
         return false;
     }
+
+    public boolean updateTransaction(int id, int product, int customer, int sale, double cost, Timestamp time) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE transaction SET product = ?, customer = ?, sale = ?, cost = ?, purchased = ? WHERE ID = " + id + ";"
+            );
+            stmt.setInt(1, product);
+            stmt.setInt(2, customer);
+            stmt.setInt(3, sale);
+            stmt.setDouble(4, cost);
+            stmt.setTimestamp(5, time);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
