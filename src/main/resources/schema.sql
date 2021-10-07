@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `transaction`
     id        INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
     product   INT            NOT NULL,
     customer  INT            NOT NULL,
+    sale      INT            NOT NULL,
     cost      DECIMAL(16, 2) NOT NULL,
     purchased TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -61,5 +62,8 @@ CREATE TABLE IF NOT EXISTS `transaction`
         FOREIGN KEY product_id (product) REFERENCES product (id),
 
     CONSTRAINT customer
-        FOREIGN KEY customer (customer) REFERENCES customer (id)
+        FOREIGN KEY customer (customer) REFERENCES customer (id),
+
+    CONSTRAINT sale
+        FOREIGN KEY sale (sale) REFERENCES sale(id)
 );

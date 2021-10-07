@@ -7,7 +7,8 @@ public final class DatabaseManager {
     private static DatabaseManager instance;
     private Connection conn;
 
-    private DatabaseManager() {}
+    private DatabaseManager() {
+    }
 
     public static DatabaseManager getInstance() {
         if (instance == null) {
@@ -63,10 +64,23 @@ public final class DatabaseManager {
     public boolean updateCustomer(int id, String name, boolean loyal) {
         try {
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE customer SET name = ?, loyal = ? WHERE id = " + id);
+                    "UPDATE customer SET name = ?, loyal = ? WHERE id = " + id + ";"
+            );
             stmt.setString(1, name);
             stmt.setBoolean(2, loyal);
             stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateProduct(int id, String name, int stock, double price) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE product SET name = ?, stock = ?, price = ? WHERE id = " + id + ";"
+            );
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
