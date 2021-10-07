@@ -60,7 +60,17 @@ public final class DatabaseManager {
         return null;
     }
 
-    public void insert() {
-
+    public boolean updateCustomer(int id, String name, boolean loyal) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE customer SET name = ?, loyal = ? WHERE id = " + id);
+            stmt.setString(1, name);
+            stmt.setBoolean(2, loyal);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
