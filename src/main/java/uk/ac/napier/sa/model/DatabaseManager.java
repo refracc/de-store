@@ -81,6 +81,25 @@ public final class DatabaseManager {
             PreparedStatement stmt = conn.prepareStatement(
                     "UPDATE product SET name = ?, stock = ?, price = ? WHERE id = " + id + ";"
             );
+            stmt.setString(1, name);
+            stmt.setInt(2, stock);
+            stmt.setDouble(3, price);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateSale(int id, int product, int type) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE sale SET product = ?, type = ? WHERE id = " + id + ";"
+            );
+            stmt.setInt(1, product);
+            stmt.setInt(2, type);
+            stmt.executeUpdate();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
