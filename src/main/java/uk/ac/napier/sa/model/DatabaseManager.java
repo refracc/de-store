@@ -4,13 +4,13 @@ import java.sql.*;
 
 public final class DatabaseManager {
 
-    private static DatabaseManager instance;
+    private volatile static DatabaseManager instance;
     private Connection conn;
 
     private DatabaseManager() {
     }
 
-    public static DatabaseManager getInstance() {
+    public synchronized static DatabaseManager getInstance() {
         if (instance == null) {
             synchronized (DatabaseManager.class) {
                 if (instance == null) {
@@ -21,7 +21,7 @@ public final class DatabaseManager {
         return instance;
     }
 
-    public boolean connect(String host, int port, boolean useSSL, String user, String pass) {
+    public boolean connect(String host, int port, String database, boolean useSSL, String user, String pass) {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
@@ -30,7 +30,7 @@ public final class DatabaseManager {
         }
 
         try {
-            conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/database?useSSL=" + useSSL, user, pass);
+            conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=" + useSSL, user, pass);
             System.out.println("Successfully connected to database!");
             return true;
         } catch (SQLException e) {
