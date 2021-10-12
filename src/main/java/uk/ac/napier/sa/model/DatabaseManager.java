@@ -1,6 +1,7 @@
 package uk.ac.napier.sa.model;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
 
@@ -76,7 +77,7 @@ public final class DatabaseManager {
      * Query the database.
      * @param sql The sql statement being used to query the database.
      */
-    public ResultSet query(@NotNull String sql) {
+    public @Nullable ResultSet query(@NotNull String sql) {
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             return stmt.executeQuery();

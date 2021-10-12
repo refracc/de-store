@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `customer`
 (
     id    INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name  varchar(255) NOT NULL,
-    loyal boolean      NOT NULL DEFAULT false
+    loyal boolean      NOT NULL DEFAULT FALSE
 );
 
 -- --------------------
