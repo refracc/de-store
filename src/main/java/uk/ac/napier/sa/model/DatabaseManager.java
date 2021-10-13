@@ -3,7 +3,11 @@ package uk.ac.napier.sa.model;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.sql.*;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public final class DatabaseManager {
 
@@ -31,12 +35,13 @@ public final class DatabaseManager {
 
     /**
      * Create a connection to the database.
-     * @param host The host address of the machine.
-     * @param port The port allocated to the SQL database.
+     *
+     * @param host     The host address of the machine.
+     * @param port     The port allocated to the SQL database.
      * @param database The database to be used for the connection.
-     * @param useSSL Whether to use SSL for the connection.
-     * @param user The username.
-     * @param pass The password.
+     * @param useSSL   Whether to use SSL for the connection.
+     * @param user     The username.
+     * @param pass     The password.
      * @return True if the database can be connected to, otherwise false.
      */
     public boolean connect(@NotNull String host, int port, @NotNull String database, boolean useSSL, @NotNull String user, @NotNull String pass) {
@@ -59,6 +64,7 @@ public final class DatabaseManager {
 
     /**
      * Disconnect from the database.
+     *
      * @return True if disconnect is successful, false if connection did not exist in the first place.
      */
     public boolean disconnect() {
@@ -75,9 +81,10 @@ public final class DatabaseManager {
 
     /**
      * Query the database.
+     *
      * @param sql The sql statement being used to query the database.
      */
-    public @Nullable ResultSet query(@NotNull String sql) {
+    private @Nullable ResultSet query(@NotNull String sql) {
         try {
             PreparedStatement stmt = conn.prepareStatement(sql);
             return stmt.executeQuery();
@@ -88,9 +95,26 @@ public final class DatabaseManager {
     }
 
     /**
+     * Update the database.
+     *
+     * @param sql The sql statement being used to update the database.
+     */
+    private boolean execute(@NotNull String sql) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            return stmt.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    /**
      * Method used to update a customer by ID.
-     * @param id The unique identifier allocated to all Customers.
-     * @param name The name of the customer
+     *
+     * @param id    The unique identifier allocated to all Customers.
+     * @param name  The name of the customer
      * @param loyal If the customer holds a valid loyalty card
      * @return True if the update is successful.
      */
@@ -111,8 +135,9 @@ public final class DatabaseManager {
 
     /**
      * The method used to update a product by ID
-     * @param id The unique identifier of the product.
-     * @param name The name of the product.
+     *
+     * @param id    The unique identifier of the product.
+     * @param name  The name of the product.
      * @param stock The stock quantity.
      * @param price The price of the item.
      * @return True if the update is successful.
@@ -135,9 +160,10 @@ public final class DatabaseManager {
 
     /**
      * The method used to update a sale.
-     * @param id The unique identifier of the sale.
+     *
+     * @param id      The unique identifier of the sale.
      * @param product The product purchased.
-     * @param type The type of sale.
+     * @param type    The type of sale.
      * @return True if the sale is updated successfully, false otherwise.
      */
     public boolean updateSale(int id, int product, int type) {
@@ -158,20 +184,19 @@ public final class DatabaseManager {
 
     /**
      * The method used for udpateing a transaction.
-     * @param id The unique identifier for the transaction.
-     * @param product The purchased product's ID
+     *
+     * @param id       The unique identifier for the transaction.
      * @param customer The customer's ID
-     * @param sale The sale type.
-     * @param cost The total cost of the transaction.
-     * @param time The date & time this transaction occurred.
+     * @param sale     The sale type.
+     * @param cost     The total cost of the transaction.
+     * @param time     The date & time this transaction occurred.
      * @return True if the transaction has been updated accordingly, false otherwise.
      */
-    public boolean updateTransaction(int id, int product, int customer, int sale, double cost, @NotNull Timestamp time) {
+    public boolean updateTransaction(int id, int customer, int sale, double cost, @NotNull Timestamp time) {
         try {
             PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE transaction SET product = ?, customer = ?, sale = ?, cost = ?, purchased = ? WHERE ID = " + id + ";"
+                    "UPDATE transaction SET customer = ?, sale = ?, cost = ?, purchased = ? WHERE ID = " + id + ";"
             );
-            stmt.setInt(1, product);
             stmt.setInt(2, customer);
             stmt.setInt(3, sale);
             stmt.setDouble(4, cost);
@@ -179,6 +204,21 @@ public final class DatabaseManager {
             stmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean init(String p) {
+        try {
+            List<String> lines = FileManager.getInstance().read(Path.of(p));
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+                for (String s : lines) execute(s);
+                return null;
+            });
+            future.get();
+            return true;
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         return false;
