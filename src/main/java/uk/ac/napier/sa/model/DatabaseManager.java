@@ -2,12 +2,16 @@ package uk.ac.napier.sa.model;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.ac.napier.sa.controller.adt.Product;
 
 import java.nio.file.Path;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class DatabaseManager {
 
@@ -83,10 +87,10 @@ public final class DatabaseManager {
      * Query the database.
      *
      * @param sql The sql statement being used to query the database.
+     * @return the set of results from the query.
      */
     private @Nullable ResultSet query(@NotNull String sql) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(sql);
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             return stmt.executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -98,10 +102,10 @@ public final class DatabaseManager {
      * Update the database.
      *
      * @param sql The sql statement being used to update the database.
+     * @return True: If the update could execute successfully, false otherwise.
      */
     private boolean execute(@NotNull String sql) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(sql);
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             return stmt.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -111,104 +115,10 @@ public final class DatabaseManager {
 
 
     /**
-     * Method used to update a customer by ID.
-     *
-     * @param id    The unique identifier allocated to all Customers.
-     * @param name  The name of the customer
-     * @param loyal If the customer holds a valid loyalty card
-     * @return True if the update is successful.
+     * The method that has to be called to initialise the database.
+     * @param p The path of the file to be executed to initialise the database.
+     * @return True: Initialisation is successful, false otherwise.
      */
-    public boolean updateCustomer(int id, @NotNull String name, boolean loyal) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE customer SET name = ?, loyal = ? WHERE id = " + id + ";"
-            );
-            stmt.setString(1, name);
-            stmt.setBoolean(2, loyal);
-            stmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * The method used to update a product by ID
-     *
-     * @param id    The unique identifier of the product.
-     * @param name  The name of the product.
-     * @param stock The stock quantity.
-     * @param price The price of the item.
-     * @return True if the update is successful.
-     */
-    public boolean updateProduct(int id, @NotNull String name, int stock, double price) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE product SET name = ?, stock = ?, price = ? WHERE id = " + id + ";"
-            );
-            stmt.setString(1, name);
-            stmt.setInt(2, stock);
-            stmt.setDouble(3, price);
-            stmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * The method used to update a sale.
-     *
-     * @param id      The unique identifier of the sale.
-     * @param product The product purchased.
-     * @param type    The type of sale.
-     * @return True if the sale is updated successfully, false otherwise.
-     */
-    public boolean updateSale(int id, int product, int type) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE sale SET product = ?, type = ? WHERE id = " + id + ";"
-            );
-            stmt.setInt(1, product);
-            stmt.setInt(2, type);
-            stmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-
-    /**
-     * The method used for udpateing a transaction.
-     *
-     * @param id       The unique identifier for the transaction.
-     * @param customer The customer's ID
-     * @param sale     The sale type.
-     * @param cost     The total cost of the transaction.
-     * @param time     The date & time this transaction occurred.
-     * @return True if the transaction has been updated accordingly, false otherwise.
-     */
-    public boolean updateTransaction(int id, int customer, int sale, double cost, @NotNull Timestamp time) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE transaction SET customer = ?, sale = ?, cost = ?, purchased = ? WHERE ID = " + id + ";"
-            );
-            stmt.setInt(2, customer);
-            stmt.setInt(3, sale);
-            stmt.setDouble(4, cost);
-            stmt.setTimestamp(5, time);
-            stmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     public boolean init(String p) {
         try {
             List<String> lines = FileManager.getInstance().read(Path.of(p));
@@ -216,11 +126,53 @@ public final class DatabaseManager {
                 for (String s : lines) execute(s);
                 return null;
             });
-            future.get();
+            future.join();
             return true;
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    /**
+     * Asynchronously obtain
+     * @param id The identification number of the product
+     * @return The product requested.
+     */
+    public Product getProduct(int id) {
+        AtomicReference<String> name = null;
+        AtomicInteger stock = new AtomicInteger();
+        AtomicReference<Double> price = new AtomicReference<>((double) 0);
+        List<Integer> sales = new ArrayList<>();
+
+        CompletableFuture<Product> future = CompletableFuture.supplyAsync(() -> {
+            try {
+                ResultSet results = query("SELECT * FROM products WHERE ID = " + id);
+
+                while (true) {
+                    assert results != null;
+                    if (!results.next()) break;
+                    name.set(results.getString("name"));
+                    stock.set(results.getInt("stock"));
+                    price.set(results.getDouble("price"));
+                }
+
+                results = query("SELECT * FROM sales WHERE ID = " + id);
+
+                while (true) {
+                    assert results != null;
+                    if (!results.next()) break;
+                    sales.add(results.getInt("type"));
+                }
+
+                assert name != null;
+                return new Product(id, name.get(), stock.get(), price.get(), sales);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return null;
+        });
+
+        return future.join();
     }
 }
