@@ -16,6 +16,7 @@ INSERT INTO customer (`name`, `loyal`) VALUES ('Cal Skeates', 1);
 -- ----------------------- --
 --       Product Data      --
 -- ----------------------- --
+--
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Red Wine', 384, 11.50);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('White Wine', 768, 14.80);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Rosé Wine', 474, 24.60);
@@ -47,6 +48,7 @@ INSERT INTO sale (`product`, `type`) VALUES (8, 3);
 -- ----------------------- --
 --    Transaction Data     --
 -- ----------------------- --
+--
 INSERT INTO transaction (`customer`, `sale`, `cost`, `purchased`) VALUES (1, 1, 17.46, '2021-08-10 12:23:56');
 INSERT INTO transaction (`customer`, `sale`, `cost`, `purchased`) VALUES (4, 4, 369.00, '2021-08-25 15:45:12');
 INSERT INTO transaction (`customer`, `sale`, `cost`, `purchased`) VALUES (3, 5, 134.40, '2021-09-04 09:45:40');
