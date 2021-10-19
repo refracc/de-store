@@ -7,9 +7,12 @@ import uk.ac.napier.sa.controller.adt.Product;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.sql.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -119,6 +122,7 @@ public final class DatabaseManager {
 
     /**
      * The method that has to be called to initialise the database.
+     *
      * @param p The path of the file to be executed to initialise the database.
      * @return True: Initialisation is successful, false otherwise.
      */
@@ -139,6 +143,7 @@ public final class DatabaseManager {
 
     /**
      * Asynchronously obtain product data from the database.
+     *
      * @param id The identification number of the product
      * @return The product requested.
      */
@@ -150,7 +155,7 @@ public final class DatabaseManager {
 
         CompletableFuture<Product> future = CompletableFuture.supplyAsync(() -> {
             try {
-                ResultSet results = query("SELECT * FROM products WHERE ID = " + id);
+                ResultSet results = query("SELECT * FROM product WHERE ID = " + id);
 
                 while (true) {
                     assert results != null;
@@ -168,6 +173,8 @@ public final class DatabaseManager {
                     sales.add(results.getInt("type"));
                 }
 
+                results.close();
+
                 assert name != null;
                 return new Product(id, name.get(), stock.get(), price.get(), sales);
             } catch (SQLException e) {
@@ -181,7 +188,8 @@ public final class DatabaseManager {
 
     /**
      * Change the price of an item in the database.
-     * @param id The id number of the product.
+     *
+     * @param id    The id number of the product.
      * @param price The new price to be assigned to the item.
      * @return True if the price can be updated, false otherwise.
      */
@@ -191,23 +199,20 @@ public final class DatabaseManager {
                     *************************************
                     ***           ATTENTION           ***
                     *************************************
-                    
+                                        
                     ---> Only managers can modify the prices of items.
                     ** Unauthorised access to this system constitutes an offence
                     ** under Section 1 of the Computer Misuse Act 1990.
-                    
-                    Manager username: 
-                    """);
+                                        
+                    Manager username: """);
             String username = input.readLine();
             System.out.print("\nManager password: ");
             String password = input.readLine();
 
             if (username.equalsIgnoreCase("StoreManager") && password.equals("************")) {
-                try {
-                    ResultSet results = query("SELECT * FROM products WHERE id = " + id);
-
+                try (ResultSet results = query("SELECT * FROM product WHERE id = " + id)) {
                     assert results != null;
-                    if(results.next()) {
+                    if (results.next()) {
                         results.first();
                         results.updateDouble("price", price);
                         results.updateRow();
@@ -232,7 +237,8 @@ public final class DatabaseManager {
 
     /**
      * Create a new sale and add it to the database.
-     * @param id The ID of the product
+     *
+     * @param id       The ID of the product
      * @param saleType The type of sale (1, 2, or 3)
      * @return True if the sale can be added to the database, false otherwise.
      */
@@ -240,12 +246,136 @@ public final class DatabaseManager {
         return execute(String.format("INSERT INTO sale (`product`, `type`) VALUES (%d, %d)", id, saleType));
     }
 
-    public List<String> stockMonitor() {
-        try (ResultSet results = query("")) {
+    public @NotNull List<Integer> stockMonitor() {
+        try (ResultSet results = query("SELECT id FROM product WHERE stock <= 5")) {
+            List<Integer> lowProducts = new ArrayList<>();
 
-         } catch (SQLException e) {
+            while (true) {
+                assert results != null;
+                if (!results.next()) break;
+                lowProducts.add(results.getInt("id"));
+            }
+            return lowProducts;
+        } catch (SQLException e) {
             e.printStackTrace();
         }
-        return new ArrayList<>();
+        return Collections.emptyList();
+    }
+
+    /**
+     * Check the database for products that have no stock.
+     * Then, given them a new stock value of a case of items (24x the product)
+     *
+     * @return True if there is no stock (order some more), false if no items have no stock.
+     */
+    public boolean noStock() {
+        try (ResultSet results = query("SELECT * FROM product WHERE stock = 0")) {
+            assert results != null;
+            if (results.next()) {
+                while (results.next()) {
+                    results.updateInt("stock", 24);
+                    results.updateRow();
+                }
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Create a new purchase transaction and add it to the database.
+     * @param customerId The ID of the customer making the transaction.
+     * @param productId The ID of the product that is in use of the transaction.
+     * @return True if the transaction is successful, false otherwise.
+     */
+    public boolean purchase(int customerId, int productId) {
+        DecimalFormat df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.UP);
+
+        double cost = 0;
+
+        if (execute(String.format("UPDATE product SET stock = stock - 1 WHERE id = %d AND stock > 0", productId))) {
+            try {
+                ResultSet results = query(String.format("SELECT price FROM product WHERE id = %d", productId));
+                while (true) {
+                    assert results != null;
+                    if (!results.next()) break;
+                    cost += results.getDouble("price");
+                }
+
+                System.out.printf("\nProduct price: £%s\n", df.format(cost));
+
+                results = query(String.format("SELECT loyal FROM customer WHERE ID = %d", customerId));
+
+                while (true) {
+                    assert results != null;
+                    if (!results.next()) break;
+                    if (results.getInt("loyalty") == 1) {
+                        cost *= 0.9;
+                        System.out.println("Customer is on loyalty card scheme. 10% discount has been applied.");
+                        System.out.printf("Discounted price: £%s\n", df.format(cost));
+                    }
+                }
+
+                cost *= 1.05;
+                System.out.printf("Total cost: £%s\n", df.format(cost));
+
+                int saleId = 0;
+                results = query("SELECT id FROM sale WHERE product = " + productId + " ORDER BY id DESC");
+                assert results != null;
+
+                if (results.first())
+                    saleId = results.getInt("id");
+
+                results.close();
+                return execute(String.format("INSERT INTO transaction (`customer`, `sale`, `cost`) VALUES (%d, %d, %s)", customerId, saleId, df.format(cost)));
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if a customer is eligible for a loyalty card, based on purchases.
+     * @param id The ID of the customer.
+     * @return True if the customer has had more than 2 purchases & not already on the loyalty scheme. False otherwise.
+     */
+    public boolean checkLoyaltyCardEligibility(int id) {
+        int purchaseCount = 0;
+        int customerCard = 0;
+
+        try {
+            ResultSet results = query(String.format("SELECT COUNT(id) AS transactions FROM transaction WHERE CUSTOMER = %d", id));
+
+            while (true) {
+                assert results != null;
+                if (!results.next()) break;
+                purchaseCount = results.getInt("transactions");
+            }
+
+            results = query(String.format("SELECT loyal FROM customer WHERE ID = %d", id));
+            assert results != null;
+
+            if (results.first()) {
+                customerCard = results.getInt("loyal");
+            }
+
+            return ((purchaseCount > 2) && (customerCard != 1));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Grant a customer a loyalty card.
+     * @param id The ID of the customer.
+     * @return True if the database transaction has been complete. False otherwise.
+     */
+    public boolean grantLoyalty(int id) {
+        return execute(String.format("UPDATE customer SET loyal = 1 WHERE id = %d", id));
     }
 }

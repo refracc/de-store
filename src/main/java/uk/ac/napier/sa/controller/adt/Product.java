@@ -2,7 +2,6 @@ package uk.ac.napier.sa.controller.adt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -16,15 +15,17 @@ public class Product {
     private double price;
     private List<Integer> sales;
 
-    private Product() {}
+    private Product() {
+    }
 
     /**
      * The default constructor for this class.
-     * @param id The identification number allocated to the product from the database.
-     * @param name The name of the product.
+     *
+     * @param id       The identification number allocated to the product from the database.
+     * @param name     The name of the product.
      * @param quantity The quantity of the item.
-     * @param price The price of the item.
-     * @param sales The list of sales (containing the sales type integer) with this item.
+     * @param price    The price of the item.
+     * @param sales    The list of sales (containing the sales type integer) with this item.
      */
     public Product(int id, String name, int quantity, double price, List<Integer> sales) {
         this.id = id;
@@ -36,6 +37,7 @@ public class Product {
 
     /**
      * Obtain the product ID number.
+     *
      * @return The product ID.
      */
     public int getId() {
@@ -44,6 +46,7 @@ public class Product {
 
     /**
      * Obtain the product name.
+     *
      * @return The product name.
      */
     public String getName() {
@@ -52,6 +55,7 @@ public class Product {
 
     /**
      * Obtain the product quantity
+     *
      * @return The quantity of the product
      */
     public int getQuantity() {
@@ -60,6 +64,7 @@ public class Product {
 
     /**
      * Obtain the price per unit
+     *
      * @return The price per unit
      */
     public double getPrice() {
@@ -68,6 +73,7 @@ public class Product {
 
     /**
      * The list of sale types attributed to this item.
+     *
      * @return A copy of the list of sale types.
      */
     public String getSales() {

@@ -18,6 +18,7 @@ public final class FileManager {
 
     /**
      * A thread-safe way of instantiating the {@link FileManager} class.
+     *
      * @return An instance of this class.
      */
     public synchronized static FileManager getInstance() {
@@ -33,9 +34,10 @@ public final class FileManager {
 
     /**
      * Asynchronously read in a specified file and have it returned as a list of strings.
+     *
      * @param p The path of the file
      * @return The file, expressed as a list of strings.
-     * @throws ExecutionException If the result retrieved from a task is aborted by a thrown exception.
+     * @throws ExecutionException   If the result retrieved from a task is aborted by a thrown exception.
      * @throws InterruptedException When the thread is occupied and interrupted either before or during a certain activity.
      */
     public List<String> read(Path p) throws ExecutionException, InterruptedException {

@@ -21,7 +21,7 @@ INSERT INTO product (`name`, `stock`, `price`) VALUES ('Red Wine', 384, 11.50);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('White Wine', 768, 14.80);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Rosé Wine', 474, 24.60);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Vodka', 54, 9.70);
-INSERT INTO product (`name`, `stock`, `price`) VALUES ('Gin', 10, 10.50);
+INSERT INTO product (`name`, `stock`, `price`) VALUES ('Gin', 1, 10.50);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Spiced Rum', 2, 16.50);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Bacardi', 5, 14.30);
 INSERT INTO product (`name`, `stock`, `price`) VALUES ('Whisky', 24, 35.00);
