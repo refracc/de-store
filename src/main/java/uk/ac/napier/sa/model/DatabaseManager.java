@@ -11,9 +11,7 @@ import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.sql.*;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -377,5 +375,49 @@ public final class DatabaseManager {
      */
     public boolean grantLoyalty(int id) {
         return execute(String.format("UPDATE customer SET loyal = 1 WHERE id = %d", id));
+    }
+
+    /**
+     * Produce a report of that month's operations.
+     * @return A map of purchases, revenue and popular items.
+     */
+    public @NotNull Map<String, Object> generateReport() {
+        Map<String, Object> stats = new HashMap<>();
+
+        int purchases = 0;
+        double revenue = 0;
+        int popularItem = 0;
+
+        try {
+            ResultSet results = query("SELECT COUNT(id) FROM transaction WHERE purchased > NOW() - INTERVAL 1 MONTH");
+
+            assert results != null;
+            if (results.first()) {
+                purchases = results.getInt(1);
+            }
+
+            results = query("SELECT SUM(cost) FROM transaction WHERE purchased > NOW() - INTERVAL 1 MONTH");
+
+            assert results != null;
+            if (results.first()) {
+                revenue = results.getDouble(1);
+            }
+
+            results = query("SELECT MAX(product_count) FROM (SELECT product, COUNT(product) AS product_count FROM transaction GROUP BY product)");
+
+            assert results != null;
+            if (results.first()) {
+                popularItem = results.getInt(1);
+            }
+
+            results.close();
+
+            stats.put("purchases", purchases);
+            stats.put("revenue", revenue);
+            stats.put("most-popular", popularItem);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return stats;
     }
 }
