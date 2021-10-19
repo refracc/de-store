@@ -16,6 +16,10 @@ public final class FileManager {
     private FileManager() {
     }
 
+    /**
+     * A thread-safe way of instantiating the {@link FileManager} class.
+     * @return An instance of this class.
+     */
     public synchronized static FileManager getInstance() {
         if (instance == null) {
             synchronized (FileManager.class) {
@@ -27,6 +31,13 @@ public final class FileManager {
         return instance;
     }
 
+    /**
+     * Asynchronously read in a specified file and have it returned as a list of strings.
+     * @param p The path of the file
+     * @return The file, expressed as a list of strings.
+     * @throws ExecutionException If the result retrieved from a task is aborted by a thrown exception.
+     * @throws InterruptedException When the thread is occupied and interrupted either before or during a certain activity.
+     */
     public List<String> read(Path p) throws ExecutionException, InterruptedException {
         CompletableFuture<List<String>> future = CompletableFuture.supplyAsync(() -> {
             List<String> list = null;
@@ -38,6 +49,6 @@ public final class FileManager {
             return list;
         });
 
-        return (future.get() != null ? future.get() : new ArrayList<>());
+        return (future.join() != null ? future.get() : new ArrayList<>());
     }
 }

@@ -4,6 +4,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.ac.napier.sa.controller.adt.Product;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.ArrayList;
@@ -135,7 +138,7 @@ public final class DatabaseManager {
     }
 
     /**
-     * Asynchronously obtain
+     * Asynchronously obtain product data from the database.
      * @param id The identification number of the product
      * @return The product requested.
      */
@@ -174,5 +177,75 @@ public final class DatabaseManager {
         });
 
         return future.join();
+    }
+
+    /**
+     * Change the price of an item in the database.
+     * @param id The id number of the product.
+     * @param price The new price to be assigned to the item.
+     * @return True if the price can be updated, false otherwise.
+     */
+    public boolean changePrice(int id, double price) {
+        try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in))) {
+            System.out.print("""
+                    *************************************
+                    ***           ATTENTION           ***
+                    *************************************
+                    
+                    ---> Only managers can modify the prices of items.
+                    ** Unauthorised access to this system constitutes an offence
+                    ** under Section 1 of the Computer Misuse Act 1990.
+                    
+                    Manager username: 
+                    """);
+            String username = input.readLine();
+            System.out.print("\nManager password: ");
+            String password = input.readLine();
+
+            if (username.equalsIgnoreCase("StoreManager") && password.equals("************")) {
+                try {
+                    ResultSet results = query("SELECT * FROM products WHERE id = " + id);
+
+                    assert results != null;
+                    if(results.next()) {
+                        results.first();
+                        results.updateDouble("price", price);
+                        results.updateRow();
+                        System.out.format("Product %d has had price updated to %f.2", id, price);
+                        return true;
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("""
+                        **************************
+                        ** Invalid Credentials! **
+                        **************************
+                        """);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Create a new sale and add it to the database.
+     * @param id The ID of the product
+     * @param saleType The type of sale (1, 2, or 3)
+     * @return True if the sale can be added to the database, false otherwise.
+     */
+    public boolean sell(int id, int saleType) {
+        return execute(String.format("INSERT INTO sale (`product`, `type`) VALUES (%d, %d)", id, saleType));
+    }
+
+    public List<String> stockMonitor() {
+        try (ResultSet results = query("")) {
+
+         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
     }
 }
