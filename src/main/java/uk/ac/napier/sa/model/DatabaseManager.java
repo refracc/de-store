@@ -163,7 +163,6 @@ public non-sealed class DatabaseManager implements RemoteDatabaseManager {
                 while (true) {
                     assert results != null;
                     if (!results.next()) break;
-                    assert name != null;
                     name.set(results.getString("name"));
                     stock.set(results.getInt("stock"));
                     price.set(results.getDouble("price"));

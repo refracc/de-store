@@ -5,40 +5,73 @@ import org.jetbrains.annotations.Nullable;
 import uk.ac.napier.sa.controller.adt.Product;
 
 import java.sql.ResultSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public sealed interface RemoteDatabaseManager permits DatabaseManager {
 
 
-    boolean connect(@NotNull String host, int port, @NotNull String database, boolean useSSL, @NotNull String user, @NotNull String pass);
+    default boolean connect(@NotNull String host, int port, @NotNull String database, boolean useSSL, @NotNull String user, @NotNull String pass) {
+        return false;
+    }
 
-    boolean disconnect();
+    default boolean disconnect() {
+        return false;
+    }
 
-    boolean init(String path);
+    default boolean init(String path) {
+        return false;
+    }
 
-    boolean changePrice(int id, double price);
+    default boolean changePrice(int id, double price) {
+        return false;
+    }
 
-    boolean sell(int id, int saleType);
+    default boolean sell(int id, int saleType) {
+        return false;
+    }
 
-    boolean noStock();
+    default boolean noStock() {
+        return false;
+    }
 
-    boolean purchase(int customerId, int productId);
+    default boolean purchase(int customerId, int productId) {
+        return false;
+    }
 
-    boolean checkLoyaltyCardEligibility(int id);
+    default boolean checkLoyaltyCardEligibility(int id) {
+        return false;
+    }
 
-    boolean grantLoyalty(int id);
+    default boolean grantLoyalty(int id) {
+        return false;
+    }
 
     void printLastNPurchases(int n);
 
-    Product getProduct(int id);
+    default Product getProduct(int id) {
+        return null;
+    }
 
-    @Nullable ResultSet query(@NotNull String sql);
+    @Nullable
+    default ResultSet query(@NotNull String sql) {
+        return null;
+    }
 
-    @Nullable String retrieveProductName(int id);
+    @Nullable
+    default String retrieveProductName(int id) {
+        return "";
+    }
 
-    @NotNull List<Integer> stockMonitor();
+    @NotNull
+    default List<Integer> stockMonitor() {
+        return Collections.emptyList();
+    }
 
-    @NotNull Map<String, Object> generateReport();
+    @NotNull
+    default Map<String, Object> generateReport() {
+        return Collections.emptyMap();
+    }
 
 }
