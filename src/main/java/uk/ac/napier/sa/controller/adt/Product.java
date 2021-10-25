@@ -79,4 +79,17 @@ public class Product {
     public String getSales() {
         return Arrays.toString(sales.toArray());
     }
+
+    @Override
+    public String toString() {
+        return String.format("""
+                Product (ID): %d
+                Product (Name): %s
+                Product (Price): £%f/unit
+                Product (Stock): %d
+                Product (Sales): %s
+                """,
+                this.getId(), this.getName(), this.getPrice(), this.getQuantity(),
+                this.getSales().contains("1") ? "3 for 2" : this.getSales().contains("2") ? "Buy One Get One Free" : this.getSales().contains("3") ? "Free Delivery" : "N/A");
+    }
 }

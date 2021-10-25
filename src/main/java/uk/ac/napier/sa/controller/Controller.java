@@ -1,13 +1,24 @@
 package uk.ac.napier.sa.controller;
 
-import uk.ac.napier.sa.model.DatabaseManager;
+import uk.ac.napier.sa.controller.adt.Product;
+import uk.ac.napier.sa.model.RemoteDatabaseManager;
 
 public class Controller {
 
-    private final DatabaseManager dbm;
+    private final RemoteDatabaseManager rdbm;
 
-    public Controller(DatabaseManager dbm) {
-        this.dbm = dbm;
+    public Controller(RemoteDatabaseManager rdbm) {
+        this.rdbm = rdbm;
+    }
+
+    /**
+     * Obtain relevant product information.
+     * @param id
+     * @return
+     */
+    public String retrieveProduct(int id) {
+        Product p = rdbm.getProduct(id);
+        return p.toString();
     }
 
 
