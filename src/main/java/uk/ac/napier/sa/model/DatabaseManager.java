@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class DatabaseManager {
+public final class DatabaseManager implements RemoteDatabaseManager {
 
     private volatile static DatabaseManager instance;
     private Connection conn;
@@ -52,6 +52,7 @@ public final class DatabaseManager {
      * @param pass     The password.
      * @return True if the database can be connected to, otherwise false.
      */
+    @Override
     public boolean connect(@NotNull String host, int port, @NotNull String database, boolean useSSL, @NotNull String user, @NotNull String pass) {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -75,6 +76,7 @@ public final class DatabaseManager {
      *
      * @return True if disconnect is successful, false if connection did not exist in the first place.
      */
+    @Override
     public boolean disconnect() {
         if (conn != null) {
             try {
@@ -93,7 +95,8 @@ public final class DatabaseManager {
      * @param sql The sql statement being used to query the database.
      * @return the set of results from the query.
      */
-    private @Nullable ResultSet query(@NotNull String sql) {
+    @Override
+    public @Nullable ResultSet query(@NotNull String sql) {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             return stmt.executeQuery();
         } catch (SQLException e) {
@@ -124,6 +127,7 @@ public final class DatabaseManager {
      * @param p The path of the file to be executed to initialise the database.
      * @return True: Initialisation is successful, false otherwise.
      */
+    @Override
     public boolean init(String p) {
         try {
             List<String> lines = FileManager.getInstance().read(Path.of(p));
@@ -145,6 +149,7 @@ public final class DatabaseManager {
      * @param id The identification number of the product
      * @return The product requested.
      */
+    @Override
     public Product getProduct(int id) {
         AtomicReference<String> name = null;
         AtomicInteger stock = new AtomicInteger();
@@ -186,9 +191,11 @@ public final class DatabaseManager {
 
     /**
      * Obtain a product's name from the database.
+     *
      * @param id The ID of the product.
      * @return The name of the product.
      */
+    @Override
     public @Nullable String retrieveProductName(int id) {
         try (ResultSet results = query(String.format("SELECT name FROM product WHERE ID = %d", id))) {
 
@@ -209,6 +216,7 @@ public final class DatabaseManager {
      * @param price The new price to be assigned to the item.
      * @return True if the price can be updated, false otherwise.
      */
+    @Override
     public boolean changePrice(int id, double price) {
         try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in))) {
             System.out.print("""
@@ -258,10 +266,18 @@ public final class DatabaseManager {
      * @param saleType The type of sale (1, 2, or 3)
      * @return True if the sale can be added to the database, false otherwise.
      */
+    @Override
     public boolean sell(int id, int saleType) {
         return execute(String.format("INSERT INTO sale (`product`, `type`) VALUES (%d, %d)", id, saleType));
     }
 
+    /**
+     * Retrieve a list of stock that has a low quantity.
+     * This function should be validated using the size of the collection returned,
+     *
+     * @return A list of stock that has a low quantity, if there isn't any, then an empty collection.
+     */
+    @Override
     public @NotNull List<Integer> stockMonitor() {
         try (ResultSet results = query("SELECT id FROM product WHERE stock <= 5")) {
             List<Integer> lowProducts = new ArrayList<>();
@@ -284,6 +300,7 @@ public final class DatabaseManager {
      *
      * @return True if there is no stock (order some more), false if no items have no stock.
      */
+    @Override
     public boolean noStock() {
         try (ResultSet results = query("SELECT * FROM product WHERE stock = 0")) {
             assert results != null;
@@ -302,10 +319,12 @@ public final class DatabaseManager {
 
     /**
      * Create a new purchase transaction and add it to the database.
+     *
      * @param customerId The ID of the customer making the transaction.
-     * @param productId The ID of the product that is in use of the transaction.
+     * @param productId  The ID of the product that is in use of the transaction.
      * @return True if the transaction is successful, false otherwise.
      */
+    @Override
     public boolean purchase(int customerId, int productId) {
         DecimalFormat df = new DecimalFormat("#.##");
         df.setRoundingMode(RoundingMode.UP);
@@ -356,9 +375,11 @@ public final class DatabaseManager {
 
     /**
      * Check if a customer is eligible for a loyalty card, based on purchases.
+     *
      * @param id The ID of the customer.
      * @return True if the customer has had more than 2 purchases & not already on the loyalty scheme. False otherwise.
      */
+    @Override
     public boolean checkLoyaltyCardEligibility(int id) {
         int purchaseCount = 0;
         int customerCard = 0;
@@ -388,17 +409,21 @@ public final class DatabaseManager {
 
     /**
      * Grant a customer a loyalty card.
+     *
      * @param id The ID of the customer.
      * @return True if the database transaction has been complete. False otherwise.
      */
+    @Override
     public boolean grantLoyalty(int id) {
         return execute(String.format("UPDATE customer SET loyal = 1 WHERE id = %d", id));
     }
 
     /**
      * Produce a report of that month's operations.
+     *
      * @return A map of purchases, revenue and popular items.
      */
+    @Override
     public @NotNull Map<String, Object> generateReport() {
         Map<String, Object> stats = new HashMap<>();
 
@@ -439,6 +464,12 @@ public final class DatabaseManager {
         return stats;
     }
 
+    /**
+     * A function used to print the last N purchases from the database.
+     *
+     * @param n The number of purchases to see.
+     */
+    @Override
     public void printLastNPurchases(int n) {
         try (ResultSet results = query("SELECT id, " +
                 "(SELECT name FROM product WHERE id = transaction.id) as product_name, " +
@@ -449,14 +480,14 @@ public final class DatabaseManager {
                 assert results != null;
                 if (!results.next()) break;
                 System.out.printf("""
-                        +------------------------------------+
-                        | Transaction ID: %s\t\t\t|
-                        | Product Name: %s\t\t\t|
-                        | Customer ID: %s\t\t\t|
-                        | Cost (£): %s\t\t\t|
-                        | Purchased: %s\t\t\t|
-                        +-------------------------------------+
-                        """,
+                                +------------------------------------+
+                                | Transaction ID: %s\t\t\t|
+                                | Product Name: %s\t\t\t|
+                                | Customer ID: %s\t\t\t|
+                                | Cost (£): %s\t\t\t|
+                                | Purchased: %s\t\t\t|
+                                +-------------------------------------+
+                                """,
                         results.getInt("id"), results.getString("product_name"), results.getInt("customer_id"),
                         results.getDouble("cost"), results.getTimestamp("purchased"));
             }
