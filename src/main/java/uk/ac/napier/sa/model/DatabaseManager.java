@@ -425,7 +425,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public @NotNull Map<String, Object> generateReport() {
-        Map<String, Object> stats = new HashMap<>();
+        Map<String, Object> stats = new HashMap<>(Collections.emptyMap());
 
         int purchases = 0;
         double revenue = 0;
