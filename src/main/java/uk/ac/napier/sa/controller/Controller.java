@@ -101,16 +101,21 @@ public record Controller(RemoteDatabaseManager rdbm) {
         rdbm.printLastNPurchases(n);
     }
 
+    /**
+     * Generate a report for the user of the system.
+     *
+     * @return A report for that month.
+     */
     public String generateReport() {
         Map<String, Object> map = rdbm.generateReport();
 
         if (map.size() > 0) {
             return String.format("""
-                    MONTHLY REPORT
-                    Total purchases made in last month: %d
-                    Total revenue in last month: %f
-                    Most popular item from last month: %s
-                    """,
+                            MONTHLY REPORT
+                            Total purchases made in last month: %d
+                            Total revenue in last month: %f
+                            Most popular item from last month: %s
+                            """,
                     Integer.parseInt((String) map.get("purchases")),
                     Double.parseDouble((String) map.get("revenue")),
                     map.get("most-popular"));

@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class DatabaseManager implements RemoteDatabaseManager {
+public non-sealed class DatabaseManager implements RemoteDatabaseManager {
 
     private volatile static DatabaseManager instance;
     private Connection conn;
@@ -163,6 +163,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
                 while (true) {
                     assert results != null;
                     if (!results.next()) break;
+                    assert name != null;
                     name.set(results.getString("name"));
                     stock.set(results.getInt("stock"));
                     price.set(results.getDouble("price"));
