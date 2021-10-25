@@ -54,10 +54,12 @@ CREATE TABLE IF NOT EXISTS `sale`
 CREATE TABLE IF NOT EXISTS `transaction`
 (
     id        int            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    product   int            NOT NULL,
     customer  int            NOT NULL,
     sale      int            NOT NULL,
     cost      decimal(16, 2) NOT NULL,
     purchased TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT product_id FOREIGN KEY  product (product) REFERENCES product (id),
     CONSTRAINT customer FOREIGN KEY customer (customer) REFERENCES customer (id),
     CONSTRAINT sale FOREIGN KEY sale (sale) REFERENCES sale (id)
 );

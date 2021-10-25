@@ -185,6 +185,24 @@ public final class DatabaseManager {
     }
 
     /**
+     * Obtain a product's name from the database.
+     * @param id The ID of the product.
+     * @return The name of the product.
+     */
+    public @Nullable String retrieveProductName(int id) {
+        try (ResultSet results = query(String.format("SELECT name FROM product WHERE ID = %d", id))) {
+
+            assert results != null;
+            if (results.first()) {
+                return results.getString("name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Change the price of an item in the database.
      *
      * @param id    The id number of the product.
@@ -403,7 +421,7 @@ public final class DatabaseManager {
                 revenue = results.getDouble(1);
             }
 
-            results = query("SELECT MAX(product_count) FROM (SELECT product, COUNT(product) AS product_count FROM transaction GROUP BY product)");
+            results = query("SELECT MAX(product_count) FROM (SELECT product, COUNT(product) AS product_count FROM transaction GROUP BY product) AS alias");
 
             assert results != null;
             if (results.first()) {
@@ -419,5 +437,31 @@ public final class DatabaseManager {
             e.printStackTrace();
         }
         return stats;
+    }
+
+    public void printLastNPurchases(int n) {
+        try (ResultSet results = query("SELECT id, " +
+                "(SELECT name FROM product WHERE id = transaction.id) as product_name, " +
+                "(SELECT name FROM customer WHERE id = transaction.customer) AS customer_id, " +
+                "cost, purchased FROM transaction ORDER BY purchased DESC LIMIT " + n)) {
+
+            while (true) {
+                assert results != null;
+                if (!results.next()) break;
+                System.out.printf("""
+                        +------------------------------------+
+                        | Transaction ID: %s\t\t\t|
+                        | Product Name: %s\t\t\t|
+                        | Customer ID: %s\t\t\t|
+                        | Cost (£): %s\t\t\t|
+                        | Purchased: %s\t\t\t|
+                        +-------------------------------------+
+                        """,
+                        results.getInt("id"), results.getString("product_name"), results.getInt("customer_id"),
+                        results.getDouble("cost"), results.getTimestamp("purchased"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
