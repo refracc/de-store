@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public non-sealed class DatabaseManager implements RemoteDatabaseManager {
+public final class DatabaseManager implements RemoteDatabaseManager {
 
     private volatile static DatabaseManager instance;
     private Connection conn;
