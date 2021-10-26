@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public final class FileManager implements RemoteFileManager {
+final class FileManager implements RemoteFileManager {
 
     private volatile static FileManager instance;
 

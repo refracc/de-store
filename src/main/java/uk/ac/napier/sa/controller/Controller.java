@@ -10,8 +10,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 
-public record Controller(RemoteDatabaseManager rdbm) {
+public final class Controller {
 
+    private final RemoteDatabaseManager rdbm;
+
+    public Controller (RemoteDatabaseManager rdbm) {
+        this.rdbm = rdbm;
+    }
     /**
      * Obtain relevant product information.
      *
