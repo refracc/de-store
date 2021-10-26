@@ -32,9 +32,7 @@ public record Controller(RemoteDatabaseManager rdbm) {
      * @return Whether the price has been updated.
      */
     public @NotNull String changePrice(int id, double newPrice) {
-        boolean update = rdbm.changePrice(id, newPrice);
-
-        return update ? "Price updated successfully." : "[!] Price has not been updated.";
+        return rdbm.changePrice(id, newPrice) ? "Price updated successfully." : "[!] Price has not been updated.";
     }
 
     /**
@@ -45,9 +43,7 @@ public record Controller(RemoteDatabaseManager rdbm) {
      * @return Whether the purchase has been allowed.
      */
     public @NotNull String purchase(int customer, int product) {
-        boolean success = rdbm.purchase(customer, product);
-
-        return success ? "Purchase has been confirmed." : "[!] Purchase disallowed.";
+        return rdbm.purchase(customer, product) ? "Purchase has been confirmed." : "[!] Purchase disallowed.";
     }
 
     /**
@@ -86,10 +82,8 @@ public record Controller(RemoteDatabaseManager rdbm) {
      */
     @Contract(pure = true)
     public @NotNull String finance(char choice) {
-        if (choice == 'Y') {
-            return "Please check out with our provider, Klarna, for more information: https://www.klarna.com/uk/business/products/financing/";
-        }
-        return "[!] You have not opted in for financing.";
+        return (choice == 'Y') ? "Please check out with our provider, Klarna, for more information: https://www.klarna.com/uk/business/products/financing/"
+        : "[!] You have not opted in for financing.";
     }
 
     /**
