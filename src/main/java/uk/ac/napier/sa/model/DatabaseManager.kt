@@ -108,7 +108,7 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
      * @param path The path of the file to be executed to initialise the database.
      * @return True: Initialisation is successful, false otherwise.
      */
-    override fun init(path: String?): Boolean {
+    override fun init(path: String): Boolean {
         try {
             val lines = FileManager.instance!!.read(Path.of(path))
             val future = CompletableFuture.supplyAsync<Void?> {
@@ -373,7 +373,7 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
             if (results!!.first()) {
                 customerCard = results.getInt("loyal")
             }
-            return purchaseCount > 2 && customerCard != 1
+            return (purchaseCount > 2) && (customerCard != 1)
         } catch (e: SQLException) {
             e.printStackTrace()
         }

@@ -13,7 +13,7 @@ interface RemoteDatabaseManager {
         return false
     }
 
-    fun init(path: String?): Boolean {
+    fun init(path: String): Boolean {
         return false
     }
 
