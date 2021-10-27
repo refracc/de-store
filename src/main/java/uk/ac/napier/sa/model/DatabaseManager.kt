@@ -83,8 +83,8 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
             conn!!.prepareStatement(sql).use { return it.executeQuery() }
         } catch (e: SQLException) {
             e.printStackTrace()
+            return null
         }
-        return null
     }
 
     /**
@@ -262,9 +262,7 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
         try {
             query("SELECT id FROM product WHERE stock <= 5").use { results ->
                 val lowProducts: MutableList<Int?> = ArrayList()
-                while (true) {
-                    assert(results != null)
-                    if (!results!!.next()) break
+                while (results!!.next()) {
                     lowProducts.add(results.getInt("id"))
                 }
                 return lowProducts
@@ -310,19 +308,15 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
         val df = DecimalFormat("#.##")
         df.roundingMode = RoundingMode.UP
         var cost = 0.0
-        if (execute(String.format("UPDATE product SET stock = stock - 1 WHERE id = %d AND stock > 0", productId))) {
+        if (execute("UPDATE product SET stock = stock - 1 WHERE id = $productId AND stock > 0")) {
             try {
-                var results = query(String.format("SELECT price FROM product WHERE id = %d", productId))
-                while (true) {
-                    assert(results != null)
-                    if (!results!!.next()) break
+                var results = query("SELECT price FROM product WHERE id = $productId")
+                while (results?.next() == true) {
                     cost += results.getDouble("price")
                 }
                 System.out.printf("\nProduct price: £%s\n", df.format(cost))
-                results = query(String.format("SELECT loyal FROM customer WHERE ID = %d", customerId))
-                while (true) {
-                    assert(results != null)
-                    if (!results!!.next()) break
+                results = query("SELECT loyal FROM customer WHERE ID = $customerId")
+                while (results!!.next()) {
                     if (results.getInt("loyalty") == 1) {
                         cost *= 0.9
                         println("Customer is on loyalty card scheme. 10% discount has been applied.")
@@ -333,7 +327,6 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
                 System.out.printf("Total cost: £%s\n", df.format(cost))
                 var saleId = 0
                 results = query("SELECT id FROM sale WHERE product = $productId ORDER BY id DESC")
-                assert(results != null)
                 if (results!!.first()) saleId = results.getInt("id")
                 results.close()
                 return execute(
@@ -362,15 +355,13 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
         var customerCard = 0
         try {
             var results =
-                query(String.format("SELECT COUNT(id) AS transactions FROM transaction WHERE CUSTOMER = %d", id))
-            while (true) {
-                assert(results != null)
-                if (!results!!.next()) break
+                query("SELECT COUNT(id) AS transactions FROM transaction WHERE CUSTOMER = $id")
+            while (results!!.next()) {
                 purchaseCount = results.getInt("transactions")
             }
-            results = query(String.format("SELECT loyal FROM customer WHERE ID = %d", id))
-            assert(results != null)
-            if (results!!.first()) {
+            results = query("SELECT loyal FROM customer WHERE ID = $id")
+
+            while (results!!.next()) {
                 customerCard = results.getInt("loyal")
             }
             return (purchaseCount > 2) && (customerCard != 1)
@@ -387,7 +378,7 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
      * @return True if the database transaction has been complete. False otherwise.
      */
     override fun grantLoyalty(id: Int): Boolean {
-        return execute(String.format("UPDATE customer SET loyal = 1 WHERE id = %d", id))
+        return execute("UPDATE customer SET loyal = 1 WHERE id = $id")
     }
 
     /**
