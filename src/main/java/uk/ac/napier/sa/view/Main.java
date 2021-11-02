@@ -5,9 +5,6 @@ import uk.ac.napier.sa.controller.RemoteController;
 import uk.ac.napier.sa.model.DatabaseManager;
 import uk.ac.napier.sa.model.RemoteDatabaseManager;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Scanner;
@@ -26,22 +23,20 @@ public class Main {
         Objects.requireNonNull(DatabaseManager.getInstance()).connect("::1", 3306, "store", false, "root", "admin123");
         Arrays.asList("src/schema.sql", "src/data.sql").forEach(DatabaseManager.getInstance()::init);
 
-        while (true) {
-            System.out.println(c.stockMonitor());
-            menu();
-            int choice = s.nextInt();
+        System.out.println(c.stockMonitor());
+        menu();
+        int choice = s.nextInt();
 
-            switch (choice) {
-                case 1 -> obtainProductInfo();
-                case 2 -> modifyPLU();
-                case 3 -> addSale();
-                case 4 -> purchase();
-                case 5 -> enrolOnLoyaltyScheme();
-                case 6 -> generateReport();
-                default -> System.out.println("\t\n");
-            }
-            System.out.println();
+        switch (choice) {
+            case 1 -> obtainProductInfo();
+            case 2 -> modifyPLU();
+            case 3 -> addSale();
+            case 4 -> purchase();
+            case 5 -> enrolOnLoyaltyScheme();
+            case 6 -> generateReport();
+            default -> System.out.println("\t\n");
         }
+        System.out.println();
     }
 
     private static void menu() {

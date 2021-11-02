@@ -97,7 +97,8 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public @Nullable ResultSet query(@NotNull String sql) {
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
             return stmt.executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -112,7 +113,8 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      * @return True: If the update could execute successfully, false otherwise.
      */
     private boolean execute(@NotNull String sql) {
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
             return stmt.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -151,42 +153,36 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public Product getProduct(int id) {
-        AtomicReference<String> name = null;
-        AtomicInteger stock = new AtomicInteger();
-        AtomicReference<Double> price = new AtomicReference<>((double) 0);
+        String name = "";
+        int stock = 0;
+        double price = 0.0d;
+
         List<Integer> sales = new ArrayList<>();
+        try {
+            ResultSet results = query("SELECT * FROM product WHERE ID = " + id);
 
-        CompletableFuture<Product> future = CompletableFuture.supplyAsync(() -> {
-            try {
-                ResultSet results = query("SELECT * FROM product WHERE ID = " + id);
-
-                while (true) {
-                    assert results != null;
-                    if (!results.next()) break;
-                    name.set(results.getString("name"));
-                    stock.set(results.getInt("stock"));
-                    price.set(results.getDouble("price"));
-                }
-
-                results = query("SELECT * FROM sales WHERE ID = " + id);
-
-                while (true) {
-                    assert results != null;
-                    if (!results.next()) break;
-                    sales.add(results.getInt("type"));
-                }
-
-                results.close();
-
-                assert name != null;
-                return new Product(id, name.get(), stock.get(), price.get(), sales);
-            } catch (SQLException e) {
-                e.printStackTrace();
+            while (true) {
+                assert results != null;
+                if (!results.next()) break;
+                name = results.getString("name");
+                stock = results.getInt("stock");
+                price = results.getDouble("price");
             }
-            return null;
-        });
 
-        return future.join();
+            results = query("SELECT * FROM sale WHERE ID = " + id);
+
+            while (true) {
+                assert results != null;
+                if (!results.next()) break;
+                sales.add(results.getInt("type"));
+            }
+
+            results.close();
+            return new Product(id, name, stock, price, sales);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -197,12 +193,14 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public @Nullable String retrieveProductName(int id) {
-        try (ResultSet results = query(String.format("SELECT name FROM product WHERE ID = %d", id))) {
+        try {
+            ResultSet results = query(String.format("SELECT name FROM product WHERE ID = %d", id));
 
             assert results != null;
             if (results.first()) {
                 return results.getString("name");
             }
+            results.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -234,18 +232,9 @@ public final class DatabaseManager implements RemoteDatabaseManager {
             String password = input.readLine();
 
             if (username.equalsIgnoreCase("StoreManager") && password.equals("************")) {
-                try (ResultSet results = query("SELECT * FROM product WHERE id = " + id)) {
-                    assert results != null;
-                    if (results.next()) {
-                        results.first();
-                        results.updateDouble("price", price);
-                        results.updateRow();
-                        System.out.format("Product %d has had price updated to %f.2", id, price);
-                        return true;
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+                execute("UPDATE product SET price = " + price + "WHERE id = " + id);
+                System.out.format("Product %d has had price updated to %f", id, price);
+                return true;
             } else {
                 System.out.println("""
                         **************************
@@ -286,6 +275,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
             while (results.next()) {
                 lowProducts.add(results.getInt("id"));
             }
+            results.close();
             return lowProducts;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -301,13 +291,16 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public boolean noStock() {
-        try (ResultSet results = query("SELECT * FROM product WHERE stock = 0")) {
+        try {
+            ResultSet results = query("SELECT * FROM product WHERE stock = 0");
+
             assert results != null;
             if (results.next()) {
                 while (results.next()) {
                     results.updateInt("stock", 24);
                     results.updateRow();
                 }
+                results.close();
                 return true;
             }
         } catch (SQLException e) {
@@ -399,6 +392,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
                 customerCard = results.getInt("loyal");
             }
 
+            results.close();
             return ((purchaseCount > 2) && (customerCard != 1));
         } catch (SQLException e) {
             e.printStackTrace();
@@ -470,11 +464,11 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public void printLastNPurchases(int n) {
-        try (ResultSet results = query("SELECT id, " +
-                "(SELECT name FROM product WHERE id = transaction.id) as product_name, " +
-                "(SELECT name FROM customer WHERE id = transaction.customer) AS customer_id, " +
-                "cost, purchased FROM transaction ORDER BY purchased DESC LIMIT " + n)) {
-
+        try {
+            ResultSet results = query("SELECT id, " +
+                                      "(SELECT name FROM product WHERE id = transaction.id) as product_name, " +
+                                      "(SELECT name FROM customer WHERE id = transaction.customer) AS customer_id, " +
+                                      "cost, purchased FROM transaction ORDER BY purchased DESC LIMIT " + n);
             while (true) {
                 assert results != null;
                 if (!results.next()) break;
@@ -490,6 +484,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
                         results.getInt("id"), results.getString("product_name"), results.getInt("customer_id"),
                         results.getDouble("cost"), results.getTimestamp("purchased"));
             }
+            results.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

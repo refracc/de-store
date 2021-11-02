@@ -1,5 +1,7 @@
 package uk.ac.napier.sa.controller.adt;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -82,14 +84,16 @@ public class Product {
 
     @Override
     public String toString() {
+        DecimalFormat df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.UP);
         return String.format("""
                         Product (ID): %d
                         Product (Name): %s
-                        Product (Price): £%f/unit
+                        Product (Price): £%s/unit
                         Product (Stock): %d
                         Product (Sales): %s
                         """,
-                this.getId(), this.getName(), this.getPrice(), this.getQuantity(),
+                this.getId(), this.getName(), df.format(this.getPrice()), this.getQuantity(),
                 this.getSales().contains("1") ? "3 for 2" : this.getSales().contains("2") ? "Buy One Get One Free" : this.getSales().contains("3") ? "Free Delivery" : "N/A");
     }
 }
