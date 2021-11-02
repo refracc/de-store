@@ -8,21 +8,19 @@ import uk.ac.napier.sa.model.RemoteDatabaseManager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public final class Controller {
+public record Controller(RemoteDatabaseManager rdbm) implements RemoteController {
 
-    private final RemoteDatabaseManager rdbm;
-
-    public Controller (RemoteDatabaseManager rdbm) {
-        this.rdbm = rdbm;
-    }
     /**
      * Obtain relevant product information.
      *
      * @param id The ID of the product
      * @return The product name.
      */
+    @Override
     public String retrieveProduct(int id) {
         Product p = rdbm.getProduct(id);
         return p.toString();
@@ -36,7 +34,9 @@ public final class Controller {
      * @param newPrice The new price of the item.
      * @return Whether the price has been updated.
      */
-    public @NotNull String changePrice(int id, double newPrice) {
+    @Override
+    public @NotNull
+    String changePrice(int id, double newPrice) {
         return rdbm.changePrice(id, newPrice) ? "Price updated successfully." : "[!] Price has not been updated.";
     }
 
@@ -47,7 +47,9 @@ public final class Controller {
      * @param product  The {@link Product} ID.
      * @return Whether the purchase has been allowed.
      */
-    public @NotNull String purchase(int customer, int product) {
+    @Override
+    public @NotNull
+    String purchase(int customer, int product) {
         return rdbm.purchase(customer, product) ? "Purchase has been confirmed." : "[!] Purchase disallowed.";
     }
 
@@ -57,6 +59,7 @@ public final class Controller {
      * @param id The ID of the customer.
      * @return Whether the customer was added to the scheme
      */
+    @Override
     public String enrolOnLoyaltyCardScheme(int id) {
         if (rdbm.checkLoyaltyCardEligibility(id)) {
             System.out.printf("\nCustomer %d is eligible for a Loyalty Card!\n", id);
@@ -79,16 +82,37 @@ public final class Controller {
         return "Customer not placed on loyalty scheme.";
     }
 
+    public String stockMonitor() {
+        List<Integer> lowStock = rdbm.stockMonitor();
+
+        if (rdbm.noStock()) {
+            System.out.println("Items that are out of stock have been ordered.");
+        }
+
+        if (!lowStock.isEmpty()) {
+            System.out.println("The following products are low in stock (by ID):");
+            lowStock.forEach(System.out::println);
+        }
+        return "Stock check completed.";
+    }
+
+    public String addSale(int id, int sale) {
+        System.out.println("Selected sale type " + sale);
+        return (rdbm.sell(id, sale) ? "Sale type added successfully" : "[!] Could not apply sale to this item.");
+    }
+
     /**
      * Check if the user wants to take this product out on finance.
      *
      * @param choice The user's choice.
      * @return Options for the user if they have opted for finance.
      */
+    @Override
     @Contract(pure = true)
-    public @NotNull String finance(char choice) {
+    public @NotNull
+    String finance(char choice) {
         return (choice == 'Y') ? "Please check out with our provider, Klarna, for more information: https://www.klarna.com/uk/business/products/financing/"
-        : "[!] You have not opted in for financing.";
+                : "[!] You have not opted in for financing.";
     }
 
     /**
@@ -96,6 +120,7 @@ public final class Controller {
      *
      * @param n The amount of purchases.
      */
+    @Override
     public void printLastNPurchases(int n) {
         rdbm.printLastNPurchases(n);
     }
@@ -105,6 +130,7 @@ public final class Controller {
      *
      * @return A report for that month.
      */
+    @Override
     public String generateReport() {
         Map<String, Object> map = rdbm.generateReport();
 

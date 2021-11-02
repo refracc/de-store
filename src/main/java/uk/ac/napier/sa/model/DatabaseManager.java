@@ -279,12 +279,11 @@ public final class DatabaseManager implements RemoteDatabaseManager {
      */
     @Override
     public @NotNull List<Integer> stockMonitor() {
-        try (ResultSet results = query("SELECT id FROM product WHERE stock <= 5")) {
+        try {
+            ResultSet results = query("SELECT id FROM product WHERE stock <= 5");
             List<Integer> lowProducts = new ArrayList<>();
 
-            while (true) {
-                assert results != null;
-                if (!results.next()) break;
+            while (results.next()) {
                 lowProducts.add(results.getInt("id"));
             }
             return lowProducts;
