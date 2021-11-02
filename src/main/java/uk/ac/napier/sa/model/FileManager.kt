@@ -17,17 +17,14 @@ internal class FileManager private constructor() : RemoteFileManager {
      * @throws InterruptedException When the thread is occupied and interrupted either before or during a certain activity.
      */
     @Throws(ExecutionException::class, InterruptedException::class)
-    override fun read(p: Path?): List<String?>? {
-        val future = CompletableFuture.supplyAsync {
+    override fun read(p: Path?): List<String?> {
             var list: List<String?>? = null
             try {
                 list = Files.readAllLines(p, Charset.defaultCharset())
             } catch (e: IOException) {
                 e.printStackTrace()
             }
-            list
-        }
-        return if (future.join() != null) future.get() else ArrayList()
+        return list ?: ArrayList()
     }
 
     companion object {

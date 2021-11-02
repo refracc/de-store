@@ -11,7 +11,6 @@ import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.text.DecimalFormat
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -50,6 +49,25 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
             println("Successfully connected to database!")
             return true
         } catch (e: SQLException) {
+            e.printStackTrace()
+        }
+        return false
+    }
+
+    /**
+     * The method that has to be called to initialise the database.
+     *
+     * @param path The path of the file to be executed to initialise the database.
+     * @return True: Initialisation is successful, false otherwise.
+     */
+    override fun init(path: String): Boolean {
+        try {
+            val lines = FileManager.instance!!.read(Path.of(path))
+            for (s in lines!!) execute(s!!)
+            return true
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        } catch (e: ExecutionException) {
             e.printStackTrace()
         }
         return false
@@ -103,30 +121,7 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
     }
 
     /**
-     * The method that has to be called to initialise the database.
-     *
-     * @param path The path of the file to be executed to initialise the database.
-     * @return True: Initialisation is successful, false otherwise.
-     */
-    override fun init(path: String): Boolean {
-        try {
-            val lines = FileManager.instance!!.read(Path.of(path))
-            val future = CompletableFuture.supplyAsync<Void?> {
-                for (s in lines!!) execute(s!!)
-                null
-            }
-            future.join()
-            return true
-        } catch (e: InterruptedException) {
-            e.printStackTrace()
-        } catch (e: ExecutionException) {
-            e.printStackTrace()
-        }
-        return false
-    }
-
-    /**
-     * Asynchronously obtain product data from the database.
+     * Obtain product data from the database.
      *
      * @param id The identification number of the product
      * @return The product requested.
@@ -136,31 +131,28 @@ class DatabaseManager private constructor() : RemoteDatabaseManager {
         val stock = AtomicInteger()
         val price = AtomicReference(0.0)
         val sales: MutableList<Int> = ArrayList()
-        val future = CompletableFuture.supplyAsync {
-            try {
-                var results = query("SELECT * FROM product WHERE ID = $id")
-                while (true) {
-                    assert(results != null)
-                    if (!results!!.next()) break
-                    name!!.set(results.getString("name"))
-                    stock.set(results.getInt("stock"))
-                    price.set(results.getDouble("price"))
-                }
-                results = query("SELECT * FROM sales WHERE ID = $id")
-                while (true) {
-                    assert(results != null)
-                    if (!results!!.next()) break
-                    sales.add(results.getInt("type"))
-                }
-                results.close()
-                assert(name != null)
-                return@supplyAsync Product(id, name!!.get(), stock.get(), price.get(), sales)
-            } catch (e: SQLException) {
-                e.printStackTrace()
+        try {
+            var results = query("SELECT * FROM product WHERE ID = $id")
+            while (true) {
+                assert(results != null)
+                if (!results!!.next()) break
+                name!!.set(results.getString("name"))
+                stock.set(results.getInt("stock"))
+                price.set(results.getDouble("price"))
             }
-            null
+            results = query("SELECT * FROM sales WHERE ID = $id")
+            while (true) {
+                assert(results != null)
+                if (!results!!.next()) break
+                sales.add(results.getInt("type"))
+            }
+            results.close()
+            assert(name != null)
+            return Product(id, name!!.get(), stock.get(), price.get(), sales)
+        } catch (e: SQLException) {
+            e.printStackTrace()
         }
-        return future.join()
+        return null
     }
 
     /**

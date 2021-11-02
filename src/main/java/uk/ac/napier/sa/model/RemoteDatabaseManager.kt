@@ -41,7 +41,10 @@ interface RemoteDatabaseManager {
         return false
     }
 
-    fun printLastNPurchases(n: Int)
+    fun printLastNPurchases(n: Int) {
+        return
+    }
+
     fun getProduct(id: Int): Product? {
         return null
     }
