@@ -1,12 +1,13 @@
-package uk.ac.napier.sa.model;
+package uk.ac.napier.sa.model
 
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+import kotlin.Throws
+import java.util.concurrent.ExecutionException
+import java.lang.InterruptedException
+import java.nio.file.Path
 
-public sealed interface RemoteFileManager permits FileManager {
-
-    default List<String> read(Path p) throws ExecutionException, InterruptedException {
-        return null;
+interface RemoteFileManager {
+    @Throws(ExecutionException::class, InterruptedException::class)
+    fun read(p: Path?): List<String?>? {
+        return null
     }
 }
