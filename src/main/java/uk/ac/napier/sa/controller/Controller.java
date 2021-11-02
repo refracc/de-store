@@ -79,7 +79,7 @@ public record Controller(RemoteDatabaseManager rdbm) implements RemoteController
                 e.printStackTrace();
             }
         }
-        return "Customer not placed on loyalty scheme.";
+        return "Customer not placed on loyalty scheme.\n";
     }
 
     public String stockMonitor() {
@@ -93,12 +93,12 @@ public record Controller(RemoteDatabaseManager rdbm) implements RemoteController
             System.out.println("The following products are low in stock (by ID):");
             lowStock.forEach(System.out::println);
         }
-        return "Stock check completed.";
+        return "Stock check completed.\n";
     }
 
     public String addSale(int id, int sale) {
         System.out.println("Selected sale type " + sale);
-        return (rdbm.sell(id, sale) ? "Sale type added successfully" : "[!] Could not apply sale to this item.");
+        return (rdbm.sell(id, sale) ? "Sale type added successfully\n" : "[!] Could not apply sale to this item.\n");
     }
 
     /**
@@ -137,12 +137,12 @@ public record Controller(RemoteDatabaseManager rdbm) implements RemoteController
         if (map.size() > 0) {
             return String.format("""
                             MONTHLY REPORT
-                            Total purchases made in last month: %d
-                            Total revenue in last month: %f
+                            Total purchases made in last month: %s
+                            Total revenue in last month: %s
                             Most popular item from last month: %s
                             """,
-                    Integer.parseInt((String) map.get("purchases")),
-                    Double.parseDouble((String) map.get("revenue")),
+                    map.get("purchases"),
+                    map.get("revenue"),
                     map.get("most-popular"));
         }
         return "No report to be generated.";

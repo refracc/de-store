@@ -22,21 +22,24 @@ public class Main {
     public static void main(String[] args) {
         Objects.requireNonNull(DatabaseManager.getInstance()).connect("::1", 3306, "store", false, "root", "admin123");
         Arrays.asList("src/schema.sql", "src/data.sql").forEach(DatabaseManager.getInstance()::init);
+        int choice = 0;
 
-        System.out.println(c.stockMonitor());
-        menu();
-        int choice = s.nextInt();
+        while (choice != 7) {
+            System.out.println(c.stockMonitor());
+            menu();
+            choice = s.nextInt();
 
-        switch (choice) {
-            case 1 -> obtainProductInfo();
-            case 2 -> modifyPLU();
-            case 3 -> addSale();
-            case 4 -> purchase();
-            case 5 -> enrolOnLoyaltyScheme();
-            case 6 -> generateReport();
-            default -> System.out.println("\t\n");
+            switch (choice) {
+                case 1 -> obtainProductInfo();
+                case 2 -> modifyPLU();
+                case 3 -> addSale();
+                case 4 -> purchase();
+                case 5 -> enrolOnLoyaltyScheme();
+                case 6 -> generateReport();
+                case 7 -> System.out.println();
+            }
         }
-        System.out.println();
+        DatabaseManager.getInstance().disconnect();
     }
 
     private static void menu() {
@@ -49,6 +52,7 @@ public class Main {
                          "|   [4]    |   Sell Product                |\n" +
                          "|   [5]    |   Everything Loyalty          |\n" +
                          "|   [6]    |   Analysis & Reports          |\n" +
+                         "|   [7]    |   Quit Application            |\n" +
                          "+----------+-------------------------------+\n" +
                          "\n" +
                          "Enter choice: ");

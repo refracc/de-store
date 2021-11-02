@@ -14,8 +14,6 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public final class DatabaseManager implements RemoteDatabaseManager {
 
@@ -98,7 +96,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
     @Override
     public @Nullable ResultSet query(@NotNull String sql) {
         try {
-            PreparedStatement stmt = conn.prepareStatement(sql);
+            PreparedStatement stmt = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
             return stmt.executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -232,9 +230,18 @@ public final class DatabaseManager implements RemoteDatabaseManager {
             String password = input.readLine();
 
             if (username.equalsIgnoreCase("StoreManager") && password.equals("************")) {
-                execute("UPDATE product SET price = " + price + "WHERE id = " + id);
-                System.out.format("Product %d has had price updated to %f", id, price);
-                return true;
+                try {
+                    ResultSet results = query("SELECT * FROM product WHERE id = " + id);
+                    assert results != null;
+                    while (results.next()) {
+                        results.updateDouble("price", price);
+                        results.updateRow();
+                    }
+                    System.out.format("Product %d has had price updated to %f", id, price);
+                    return true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             } else {
                 System.out.println("""
                         **************************
@@ -466,22 +473,22 @@ public final class DatabaseManager implements RemoteDatabaseManager {
     public void printLastNPurchases(int n) {
         try {
             ResultSet results = query("SELECT id, " +
-                                      "(SELECT name FROM product WHERE id = transaction.id) as product_name, " +
+                                      "(SELECT name FROM product WHERE id = transaction.product) as product_name, " +
                                       "(SELECT name FROM customer WHERE id = transaction.customer) AS customer_id, " +
                                       "cost, purchased FROM transaction ORDER BY purchased DESC LIMIT " + n);
             while (true) {
                 assert results != null;
                 if (!results.next()) break;
                 System.out.printf("""
-                                +------------------------------------+
-                                | Transaction ID: %s\t\t\t|
-                                | Product Name: %s\t\t\t|
-                                | Customer ID: %s\t\t\t|
-                                | Cost (£): %s\t\t\t|
-                                | Purchased: %s\t\t\t|
-                                +-------------------------------------+
+                                +-----------------------------------+
+                                | Transaction ID: %s\t\t\t\t|
+                                | Product Name: %s\t\t\t\t|
+                                | Customer Name: %s\t|
+                                | Cost (£): %s\t\t\t\t\t|
+                                | Purchased: %s\t|
+                                +-----------------------------------+
                                 """,
-                        results.getInt("id"), results.getString("product_name"), results.getInt("customer_id"),
+                        results.getInt("id"), results.getString("product_name"), results.getString("customer_id"),
                         results.getDouble("cost"), results.getTimestamp("purchased"));
             }
             results.close();
