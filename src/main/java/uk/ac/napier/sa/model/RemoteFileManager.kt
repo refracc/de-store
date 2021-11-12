@@ -6,6 +6,7 @@ import java.lang.InterruptedException
 import java.nio.file.Path
 
 interface RemoteFileManager {
+
     @Throws(ExecutionException::class, InterruptedException::class)
     fun read(p: Path?): List<String?>? {
         return null

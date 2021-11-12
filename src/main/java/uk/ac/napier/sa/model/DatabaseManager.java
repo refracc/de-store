@@ -60,7 +60,7 @@ public final class DatabaseManager implements RemoteDatabaseManager {
         }
 
         try {
-            conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=" + useSSL, user, pass);
+            conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=" + useSSL + "&allowPublicKeyRetrieval=true", user, pass);
             System.out.println("Successfully connected to database!");
             return true;
         } catch (SQLException e) {
